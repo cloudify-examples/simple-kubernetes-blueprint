@@ -6,7 +6,7 @@ description: >
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.2/resources/rest-service/cloudify/types/types.yaml
-  - http://www.getcloudify.org/spec/gcp-plugin/1.1.0/plugin.yaml
+  - http://www.getcloudify.org/spec/gcp-plugin/1.2.0/plugin.yaml
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-diamond-plugin/1.3.5/plugin.yaml
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-fabric-plugin/1.5/plugin.yaml
   - imports/kubernetes.yaml
