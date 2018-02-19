@@ -8,13 +8,14 @@ import getpass
 import subprocess
 from cloudify import ctx
 from cloudify.exceptions import OperationRetry
-from cloudify_rest_client.exceptions import CloudifyClientError
 
 JOIN_COMMAND_REGEX = '^kubeadm join[\sA-Za-z0-9\.\:\-\_]*'
 BOOTSTRAP_TOKEN_REGEX = '[a-z0-9]{6}.[a-z0-9]{16}'
+BOOTSTRAP_HASH_REGEX = '^sha256:[a-z0-9]{64}'
 IP_PORT_REGEX = '[0-9]+(?:\.[0-9]+){3}:[0-9]+'
 JCRE_COMPILED = re.compile(JOIN_COMMAND_REGEX)
 BTRE_COMPILED = re.compile(BOOTSTRAP_TOKEN_REGEX)
+BHRE_COMPILED = re.compile(BOOTSTRAP_HASH_REGEX)
 IPRE_COMPILED = re.compile(IP_PORT_REGEX)
 
 
@@ -67,12 +68,13 @@ def configure_admin_conf():
     os.environ['KUBECONFIG'] = admin_file_dest
 
 
-def setup_secrets(_split_master_port, _bootstrap_token):
+def setup_secrets(_split_master_port, _bootstrap_token, _bootstrap_hash):
     master_ip = split_master_port[0]
     master_port = split_master_port[1]
     ctx.instance.runtime_properties['master_ip'] = _split_master_port[0]
     ctx.instance.runtime_properties['master_port'] = _split_master_port[1]
     ctx.instance.runtime_properties['bootstrap_token'] = _bootstrap_token
+    ctx.instance.runtime_properties['bootstrap_hash'] = _bootstrap_hash
     from cloudify import manager
     cfy_client = manager.get_rest_client()
 
@@ -95,6 +97,13 @@ def setup_secrets(_split_master_port, _bootstrap_token):
         cfy_client.secrets.create(key=_secret_key, value=_bootstrap_token)
     else:
         cfy_client.secrets.update(key=_secret_key, value=_bootstrap_token)
+    ctx.logger.info('Set secret: {0}.'.format(_secret_key))
+
+    _secret_key = 'bootstrap_hash'
+    if cfy_client and not len(cfy_client.secrets.list(key=_secret_key)) == 1:
+        cfy_client.secrets.create(key=_secret_key, value=_bootstrap_hash)
+    else:
+        cfy_client.secrets.update(key=_secret_key, value=_bootstrap_hash)
     ctx.logger.info('Set secret: {0}.'.format(_secret_key))
 
 
@@ -136,11 +145,13 @@ if __name__ == '__main__':
 
     for li in split_join_command:
         ctx.logger.info('Sorting bits and pieces: li: {0}'.format(li))
-        if re.match(BTRE_COMPILED, li):
+        if re.match(BHRE_COMPILED, li):
+            bootstrap_hash = li
+        elif re.match(BTRE_COMPILED, li):
             bootstrap_token = li
         elif re.match(IPRE_COMPILED, li):
             split_master_port = li.split(':')
-    setup_secrets(split_master_port, bootstrap_token)
+    setup_secrets(split_master_port, bootstrap_token, bootstrap_hash)
 
     configure_admin_conf()
     execute_command('kubectl apply -f https://git.io/weave-kube-1.6')

@@ -51,15 +51,19 @@ if __name__ == '__main__':
     master = masters[0]
     bootstrap_token = \
         master.target.instance.runtime_properties['bootstrap_token']
+    bootstrap_hash = \
+        master.target.instance.runtime_properties['bootstrap_hash']
     master_ip = \
         master.target.instance.runtime_properties['master_ip']
     master_port = \
         master.target.instance.runtime_properties['master_port']
 
     # Join the cluster.
-    join_command = \
-        'sudo kubeadm join --token {0} {1}:{2} --skip-preflight-checks'.format(
-            bootstrap_token, master_ip, master_port)
+    join_command = (
+        'sudo kubeadm join --token {0} --discovery-token-ca-cert-hash {1} '
+        '{2}:{3} --skip-preflight-checks'
+        .format(bootstrap_token, bootstrap_hash, master_ip, master_port)
+    )
     execute_command(join_command)
 
     # Install weave-related utils

@@ -69,6 +69,6 @@ if __name__ == '__main__':
     for line in ps.split('\n'):
         if '/usr/bin/python /usr/bin/cloud-init modules' in line:
             raise OperationRetry(
-                'You provided a Cloud-init Cloud Config to configure instances. '
-                'Waiting for Cloud-init to complete.')
+                'You provided a Cloud-init Cloud Config to configure '
+                'instances. Waiting for Cloud-init to complete.')
     ctx.logger.info('Cloud-init finished.')
