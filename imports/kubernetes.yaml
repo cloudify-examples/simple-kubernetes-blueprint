@@ -119,6 +119,29 @@ node_types:
         unmount:
           implementation: scripts/kubernetes_common/unmount.py
 
+  cloudify.nodes.ApplicationServer.kubernetes.LoadBalancer:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          # set ip and hostname and setup services
+          implementation: scripts/kubernetes_common/create.py
+          inputs:
+            cfy_user:
+              default: { get_input: cfy_user }
+            cfy_password:
+              default: { get_input: cfy_password }
+            cfy_tenant:
+              default: { get_input: cfy_tenant }
+            agent_user:
+              default: { get_input: agent_user }
+            full_install:
+              default: loadbalancer
+        configure:
+          implementation: scripts/kubernetes_loadbalancer/create.py
+      maintenance:
+        init: scripts/kubernetes_loadbalancer/init.py
+        delete: scripts/kubernetes_loadbalancer/delete.py
 
 node_templates:
 
@@ -155,6 +178,12 @@ node_templates:
         target: kubernetes_node_services
       - type: cloudify.relationships.depends_on
         target: kubernetes_master
+
+  kubernetes_load:
+    type: cloudify.nodes.ApplicationServer.kubernetes.LoadBalancer
+    relationships:
+    - target: kubernetes_load_host
+      type: cloudify.relationships.contained_in
 
 outputs:
 

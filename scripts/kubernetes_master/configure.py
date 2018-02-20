@@ -111,6 +111,12 @@ if __name__ == '__main__':
 
     ctx.instance.runtime_properties['KUBERNETES_MASTER'] = True
 
+    # echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+    status = execute_command(
+        "sudo sysctl net.bridge.bridge-nf-call-iptables=1")
+    if status is False:
+        raise OperationRetry('Failed to set bridge-nf-call-iptables')
+
     # Start Kubernetes Master
     ctx.logger.info('Attempting to start Kubernetes master.')
     start_master_command = 'sudo kubeadm init --skip-preflight-checks'

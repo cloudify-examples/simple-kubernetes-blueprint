@@ -2,7 +2,7 @@
 
 import subprocess
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 START_COMMAND = 'sudo kubeadm join --token {0} {1}:{2}'
 
@@ -35,6 +35,12 @@ def execute_command(_command):
 
 
 if __name__ == '__main__':
+
+    # echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+    status = execute_command(
+        "sudo sysctl net.bridge.bridge-nf-call-iptables=1")
+    if status is False:
+        raise OperationRetry('Failed to set bridge-nf-call-iptables')
 
     hostname = execute_command('hostname')
     ctx.instance.runtime_properties['hostname'] = hostname.rstrip('\n')

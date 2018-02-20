@@ -273,6 +273,13 @@ if __name__ == '__main__':
 
         if 'centos' in linux_distro:
             execute_command([
+                'cp', temp_cert_file,
+                '/etc/pki/ca-trust/source/anchors/cloudify.crt'
+            ])
+            execute_command([
+                'sudo', 'update-ca-trust', 'extract'
+            ])
+            execute_command([
                 'sudo', 'bash', '-c',
                 'cat {} >> /etc/pki/tls/certs/ca-bundle.crt'
                 .format(temp_cert_file)

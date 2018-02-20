@@ -71,6 +71,58 @@ node_templates:
       - type: cloudify.relationships.depends_on
         target: cloudify_host_cloud_config
 
+  kubernetes_load_host:
+    type: cloudify.aws.nodes.Instance
+    capabilities:
+      scalable:
+        properties:
+          default_instances: 1
+    properties:
+      agent_config:
+        install_method: remote
+        user: { get_input: agent_user }
+        port: 22
+        key: { get_secret: agent_key_private }
+      aws_config: *aws_config
+      image_id: { get_input: ami }
+      instance_type: { get_input: instance_type }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cloudify_load_cloud_config
+      - type: cloudify.aws.relationships.instance_connected_to_eni
+        target: kubernetes_node_nic
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: aws.cloudify_aws.ec2.instance.create
+          inputs:
+            args:
+              placement: { get_secret: availability_zone }
+              user_data: { get_attribute: [ cloudify_load_cloud_config, cloud_config ] }
+      cloudify.interfaces.monitoring_agent:
+        install:
+          implementation: diamond.diamond_agent.tasks.install
+          inputs:
+            diamond_config:
+              interval: 1
+        start: diamond.diamond_agent.tasks.start
+        stop: diamond.diamond_agent.tasks.stop
+        uninstall: diamond.diamond_agent.tasks.uninstall
+      cloudify.interfaces.monitoring:
+        start:
+          implementation: diamond.diamond_agent.tasks.add_collectors
+          inputs:
+            collectors_config:
+              ProcessResourcesCollector:
+                config:
+                  enabled: true
+                  unit: B
+                  measure_collector_time: true
+                  cpu_interval: 0.5
+                  process:
+                    hyperkube:
+                      name: hyperkube
+
   kubernetes_node_host:
     type: cloudify.aws.nodes.Instance
     capabilities:
@@ -122,6 +174,18 @@ node_templates:
                       name: hyperkube
 
   kubernetes_node_nic:
+    type: cloudify.aws.nodes.Interface
+    properties:
+      aws_config: *aws_config
+    relationships:
+      - type: cloudify.aws.relationships.connected_to_subnet
+        target: private_subnet
+      - type: cloudify.aws.relationships.connected_to_security_group
+        target: ssh_group
+      - type: cloudify.aws.relationships.connected_to_security_group
+        target: kubernetes_security_group
+
+  kubernetes_load_nic:
     type: cloudify.aws.nodes.Interface
     properties:
       aws_config: *aws_config
@@ -258,6 +322,11 @@ groups:
       - kubernetes_node_host
       - kubernetes_node_nic
 
+  k8s_load_group:
+    members:
+      - kubernetes_load_host
+      - kubernetes_load_nic
+
 policies:
 
   kubernetes_node_vms_scaling_policy:
@@ -265,6 +334,12 @@ policies:
     properties:
       default_instances:  1
     targets: [k8s_node_group]
+
+  kubernetes_load_vms_scaling_policy:
+    type: cloudify.policies.scaling
+    properties:
+      default_instances:  1
+    targets: [k8s_load_group]
 
 outputs:
 

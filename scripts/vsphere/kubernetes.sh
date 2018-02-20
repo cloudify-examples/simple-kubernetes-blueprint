@@ -13,13 +13,13 @@ EOF
 
 sudo setenforce 0
 
-sudo yum -y install kubelet-1.9.3-0 kubeadm-1.9.3-0 kubectl-1.9.3-0 kubernetes-cni-0.6.0-0
+sudo yum -y install kubelet-1.9.3-0 kubeadm-1.9.3-0 kubectl-1.9.3-0 kubernetes-cni-0.6.0-0 ca-certificates
+sudo update-ca-trust force-enable
 
 sudo systemctl enable docker && systemctl start docker
 
 # we need to disable swaps before use
 swapon -s | awk '{print "sudo swapoff " $1}' | grep -v "Filename" | sh -
-sudo sysctl net.bridge.bridge-nf-call-iptables=1
 
 sudo sed -i 's|cgroup-driver=systemd|cgroup-driver=cgroupfs --provider-id='`hostname`'|g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 

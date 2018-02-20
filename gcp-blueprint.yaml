@@ -117,7 +117,10 @@ node_templates:
               chmod 0444 /etc/yum.repos.d/kubernetes.repo
               setenforce 0
             - |
-              yum -t -y install docker-1.12.6 kubelet-1.9.3-0 kubeadm-1.9.3-0 kubectl-1.9.3-0 kubernetes-cni-0.6.0-0
+              yum -t -y install docker-1.12.6 kubelet-1.9.3-0 kubeadm-1.9.3-0 kubectl-1.9.3-0 kubernetes-cni-0.6.0-0 ca-certificates
+              sudo update-ca-trust force-enable
+              swapon -s | awk '{print "sudo swapoff " $1}' | grep -v "Filename" | sh -
+              sudo sed -i 's|cgroup-driver=systemd|cgroup-driver=cgroupfs --provider-id='`hostname`'|g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
               systemctl enable docker && systemctl start docker
               systemctl enable kubelet && systemctl start kubelet
               mkdir -p /tmp/data
@@ -154,6 +157,29 @@ node_templates:
       external_ip: true
       block_project_ssh_keys: true
       startup_script: *install_kubernetes
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: subnetwork
+      - type: cloudify.gcp.relationships.instance_connected_to_security_group
+        target: kubernetes_fw
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: *instance_ssh_key_prep
+
+  kubernetes_load_host:
+    type: cloudify.gcp.nodes.Instance
+    properties:
+      gcp_config: *gcp_config
+      agent_config:
+        install_method: remote
+        user: { get_input: agent_user }
+        port: 22
+        key: { get_secret: agent_key_private }
+      image_id: { get_input: image }
+      instance_type: { get_input: instance_type }
+      zone: { get_input: zone }
+      external_ip: true
+      block_project_ssh_keys: true
     relationships:
       - type: cloudify.relationships.depends_on
         target: subnetwork

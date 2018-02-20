@@ -126,6 +126,66 @@ node_templates:
                       hyperkube:
                         name: hyperkube
 
+  kubernetes_load_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_config
+      agent_config:
+          user: { get_input: agent_user }
+          install_method: remote
+          port: 22
+          key: { get_secret: agent_key_private }
+      server:
+        key_name: ''
+        image: ''
+        flavor: ''
+      management_network_name: { get_property: [ private_network, resource_id ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - type: cloudify.relationships.depends_on
+        target: cloudify_load_cloud_config
+      - target: kubernetes_load_port
+        type: cloudify.openstack.server_connected_to_port
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              image: { get_input: image }
+              flavor: { get_input: flavor }
+              userdata: { get_attribute: [ cloudify_load_cloud_config, cloud_config ] }
+      cloudify.interfaces.monitoring_agent:
+          install:
+            implementation: diamond.diamond_agent.tasks.install
+            inputs:
+              diamond_config:
+                interval: 1
+          start: diamond.diamond_agent.tasks.start
+          stop: diamond.diamond_agent.tasks.stop
+          uninstall: diamond.diamond_agent.tasks.uninstall
+      cloudify.interfaces.monitoring:
+          start:
+            implementation: diamond.diamond_agent.tasks.add_collectors
+            inputs:
+              collectors_config:
+                CPUCollector: {}
+                MemoryCollector: {}
+                LoadAverageCollector: {}
+                DiskUsageCollector:
+                  config:
+                    devices: x?vd[a-z]+[0-9]*$
+                NetworkCollector: {}
+                ProcessResourcesCollector:
+                  config:
+                    enabled: true
+                    unit: B
+                    measure_collector_time: true
+                    cpu_interval: 0.5
+                    process:
+                      hyperkube:
+                        name: hyperkube
+
   kubernetes_security_group:
     type: cloudify.openstack.nodes.SecurityGroup
     properties:
@@ -189,6 +249,20 @@ node_templates:
         target: kubernetes_master_ip
 
   kubernetes_node_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - type: cloudify.relationships.connected_to
+        target: private_network
+      - type: cloudify.relationships.depends_on
+        target: private_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: kubernetes_security_group
+
+  kubernetes_load_port:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
@@ -272,6 +346,11 @@ groups:
       - kubernetes_node_host
       - kubernetes_node_port
 
+  k8s_load_group:
+    members:
+      - kubernetes_load_host
+      - kubernetes_load_port
+
 policies:
 
   kubernetes_node_vms_scaling_policy:
@@ -279,6 +358,12 @@ policies:
     properties:
       default_instances:  1
     targets: [k8s_node_group]
+
+  kubernetes_load_vms_scaling_policy:
+    type: cloudify.policies.scaling
+    properties:
+      default_instances:  1
+    targets: [k8s_load_group]
 
 outputs:
 

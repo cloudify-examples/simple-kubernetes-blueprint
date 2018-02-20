@@ -136,6 +136,9 @@ node_templates:
   kubernetes_node_base:
     type: kubernetes_host
 
+  kubernetes_load_host:
+    type: kubernetes_host
+
   kubernetes_node_host:
     type: cloudify.nodes.SoftwareComponent
     interfaces:
@@ -174,6 +177,10 @@ groups:
       - kubernetes_node_base
       - kubernetes_node_host
 
+  k8s_load_group:
+    members:
+      - kubernetes_load_host
+
 policies:
 
   kubernetes_node_vms_scaling_policy:
@@ -181,6 +188,12 @@ policies:
     properties:
       default_instances:  1
     targets: [k8s_node_group]
+
+  kubernetes_load_vms_scaling_policy:
+    type: cloudify.policies.scaling
+    properties:
+      default_instances:  1
+    targets: [k8s_load_group]
 
 outputs:
 
