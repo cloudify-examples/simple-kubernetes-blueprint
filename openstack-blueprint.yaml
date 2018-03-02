@@ -5,14 +5,13 @@ description: >
   It is based on this documentation: https://kubernetes.io/docs/getting-started-guides/kubeadm/
 
 imports:
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.2/resources/rest-service/cloudify/types/types.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.4.1.1/plugin.yaml
-  - http://www.getcloudify.org/spec/utilities-plugin/1.4.1/plugin.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.4.1/cloudify_cloudinit/types.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-fabric-plugin/1.5/plugin.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-diamond-plugin/1.3.5/plugin.yaml
-  - imports/cloud-config.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
+  - plugin:cloudify-diamond-plugin?version=1.3.8
+  - plugin:cloudify-fabric-plugin?version=1.5.1
+  - plugin:cloudify-utilities-plugin?version=1.5.0
   - imports/kubernetes.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.6.0/plugin.yaml
+  - imports/cloud-config.yaml
 
 inputs:
 
@@ -81,7 +80,7 @@ node_templates:
         key_name: ''
         image: ''
         flavor: ''
-      management_network_name: { get_property: [ private_network, resource_id ] }
+      management_network_name: { get_property: [ public_network, resource_id ] }
     relationships:
       - type: cloudify.relationships.contained_in
         target: k8s_node_scaling_tier
@@ -139,7 +138,7 @@ node_templates:
         key_name: ''
         image: ''
         flavor: ''
-      management_network_name: { get_property: [ private_network, resource_id ] }
+      management_network_name: { get_property: [ public_network, resource_id ] }
     relationships:
       - type: cloudify.relationships.contained_in
         target: k8s_node_scaling_tier
@@ -256,9 +255,9 @@ node_templates:
       - type: cloudify.relationships.contained_in
         target: k8s_node_scaling_tier
       - type: cloudify.relationships.connected_to
-        target: private_network
+        target: public_network
       - type: cloudify.relationships.depends_on
-        target: private_subnet
+        target: public_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: kubernetes_security_group
 
@@ -270,28 +269,11 @@ node_templates:
       - type: cloudify.relationships.contained_in
         target: k8s_node_scaling_tier
       - type: cloudify.relationships.connected_to
-        target: private_network
+        target: public_network
       - type: cloudify.relationships.depends_on
-        target: private_subnet
+        target: public_subnet
       - type: cloudify.openstack.port_connected_to_security_group
         target: kubernetes_security_group
-
-  private_subnet:
-    type: cloudify.openstack.nodes.Subnet
-    properties:
-      openstack_config: *openstack_config
-      use_external_resource: true
-      resource_id: { get_secret: private_subnet_name }
-    relationships:
-      - target: private_network
-        type: cloudify.relationships.contained_in
-
-  private_network:
-    type: cloudify.openstack.nodes.Network
-    properties:
-      openstack_config: *openstack_config
-      use_external_resource: true
-      resource_id: { get_secret: private_network_name }
 
   public_subnet:
     type: cloudify.openstack.nodes.Subnet

@@ -58,8 +58,6 @@ You will need a *Cloudify Manager* running in either AWS, Azure, or Openstack. T
   * external_network_name: This is the network on your Openstack that represents the internet gateway network.
   * public_network_name: An openstack network. (Inbound is expected, outbound is required.)
   * public_subnet_name: A subnet on the public network.
-  * private_network_name: An openstack network. (Inbound is not expected, outbound is required.)
-  * private_subnet_name: A subnet on the network. (Inbound is not expected, outbound is required.)
   * router_name: This is a router that is attached to your Subnets designated in the secrets public_subnet_name and private_subnet_name.
   * region: Your Keystone V2 region.
   * keystone_url: Your Keystone V2 auth URL.

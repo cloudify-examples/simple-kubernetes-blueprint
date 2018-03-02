@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import subprocess
+import socket
+import time
 from cloudify import ctx
 from cloudify.exceptions import OperationRetry
 
@@ -28,12 +30,12 @@ def check_command(command):
     return True
 
 
-def execute_command(_command):
+def execute_command(command):
 
-    ctx.logger.debug('_command {0}.'.format(_command))
+    ctx.logger.debug('command {0}.'.format(repr(command)))
 
     subprocess_args = {
-        'args': _command.split(),
+        'args': command,
         'stdout': subprocess.PIPE,
         'stderr': subprocess.PIPE
     }
@@ -43,12 +45,11 @@ def execute_command(_command):
     process = subprocess.Popen(**subprocess_args)
     output, error = process.communicate()
 
-    ctx.logger.debug('command: {0} '.format(_command))
     ctx.logger.debug('error: {0} '.format(error))
     ctx.logger.debug('process.returncode: {0} '.format(process.returncode))
 
     if process.returncode:
-        ctx.logger.error('Running `{0}` returns error.'.format(_command))
+        ctx.logger.error('Running `{0}` returns error.'.format(repr(command)))
         return False
 
     return output
@@ -65,10 +66,33 @@ if __name__ == '__main__':
 
     # Next check if Cloud Init is running.
     finished = False
-    ps = execute_command('ps -ef')
+    ps = execute_command(['ps', '-ef'])
     for line in ps.split('\n'):
         if '/usr/bin/python /usr/bin/cloud-init modules' in line:
             raise OperationRetry(
                 'You provided a Cloud-init Cloud Config to configure '
                 'instances. Waiting for Cloud-init to complete.')
     ctx.logger.info('Cloud-init finished.')
+
+    execute_command(["sudo", "sed", "-i", "s|cgroup-driver=systemd|"
+                     "cgroup-driver=systemd --provider-id='{}'|g"
+                     .format(socket.gethostname()),
+                     "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"])
+
+    ctx.logger.info("Reload kubeadm")
+    status = execute_command(["sudo", "systemctl", "daemon-reload"])
+    if status is False:
+        raise OperationRetry('Failed daemon-reload')
+
+    restart_service = execute_command(["sudo", "systemctl", "stop", "kubelet"])
+    if restart_service is False:
+        raise OperationRetry('Failed to stop kubelet')
+
+    time.sleep(5)
+
+    restart_service = execute_command(
+       ["sudo", "systemctl", "start", "kubelet"])
+    if restart_service is False:
+        raise OperationRetry('Failed to start kubelet')
+
+    time.sleep(5)

@@ -4,8 +4,6 @@ import subprocess
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError, OperationRetry
 
-START_COMMAND = 'sudo kubeadm join --token {0} {1}:{2}'
-
 
 def execute_command(_command):
 
@@ -70,6 +68,7 @@ if __name__ == '__main__':
         '{2}:{3} --skip-preflight-checks'
         .format(bootstrap_token, bootstrap_hash, master_ip, master_port)
     )
+    ctx.logger.info("Join by {}".format(repr(join_command)))
     execute_command(join_command)
 
     # Install weave-related utils

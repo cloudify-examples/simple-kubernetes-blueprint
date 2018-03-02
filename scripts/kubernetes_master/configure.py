@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     # Start Kubernetes Master
     ctx.logger.info('Attempting to start Kubernetes master.')
-    start_master_command = 'sudo kubeadm init --skip-preflight-checks'
+    start_master_command = 'sudo kubeadm init'
     start_output = execute_command(start_master_command)
     ctx.logger.debug('start_master_command output: {0}'.format(start_output))
     # Check if start succeeded.

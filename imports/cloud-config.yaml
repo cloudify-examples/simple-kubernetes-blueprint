@@ -36,6 +36,7 @@ node_templates:
           - [kubectl, 1.9.3-0]
           - [kubernetes-cni, 0.6.0-0]
         runcmd:
+          - [ setenforce, 0 ]
           - [ update-ca-trust, force-enable ]
           - [ systemctl, enable, docker ]
           - [ systemctl, start, docker ]

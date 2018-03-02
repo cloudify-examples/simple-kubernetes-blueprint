@@ -105,12 +105,10 @@ def create_service(service_name):
         except HttpException:
             raise NonRecoverableError(
                 '{}.service not in resources.'.format(service_name))
-        else:
-            execute_command(['sudo', 'cp', cfy_service, service_path])
-            execute_command(['sudo', 'cp',
-                             '/etc/systemd/system/{}.service'
-                             .format(service_name),
-                             '/etc/systemd/system/multi-user.target.wants/'])
+
+        execute_command(['sudo', 'cp', cfy_service, service_path])
+        execute_command(['sudo', 'cp', service_path,
+                         '/etc/systemd/system/multi-user.target.wants/'])
 
         execute_command(['sudo', 'systemctl', 'daemon-reload'])
         execute_command(['sudo', 'systemctl', 'enable',
@@ -120,7 +118,7 @@ def create_service(service_name):
 
 
 def start_check(service_name):
-    status = ''
+    status_string = ''
     systemctl_status = execute_command(['sudo', 'systemctl', 'status',
                                         '{}.service'.format(service_name)])
     if not isinstance(systemctl_status, basestring):
@@ -129,10 +127,17 @@ def start_check(service_name):
     for line in systemctl_status.split('\n'):
         if 'Active:' in line:
             status = line.strip()
-    zstatus = status.split(' ')
-    ctx.logger.info('{} status: {}'.format(zstatus, service_name))
-    if not len(zstatus) > 1 and 'active' not in zstatus[1]:
+            zstatus = status.split(' ')
+            ctx.logger.debug('{} status line: {}'
+                             .format(service_name, repr(zstatus)))
+            if len(zstatus) > 1:
+                status_string = zstatus[1]
+
+    ctx.logger.info('{} status: {}'.format(service_name, repr(status_string)))
+    if 'active' != status_string:
         raise OperationRetry('Wait a little more.')
+    else:
+        ctx.logger.info('Service {} is started.'.format(service_name))
 
 
 def get_instance_host(relationships, rel_type, target_type):
@@ -273,7 +278,7 @@ if __name__ == '__main__':
 
         if 'centos' in linux_distro:
             execute_command([
-                'cp', temp_cert_file,
+                'sudo', 'cp', temp_cert_file,
                 '/etc/pki/ca-trust/source/anchors/cloudify.crt'
             ])
             execute_command([
@@ -294,13 +299,13 @@ if __name__ == '__main__':
         download_service("cfy-go")
 
     if full_install == "all":
-        # download scale tools
-        download_service("cfy-autoscale")
-        create_service("cfy-autoscale")
-
         # download cluster provider
         download_service("cfy-kubernetes")
         create_service("cfy-kubernetes")
 
-        start_check("cfy-autoscale")
+        # download scale tools
+        download_service("cfy-autoscale")
+        create_service("cfy-autoscale")
+
         start_check("cfy-kubernetes")
+        start_check("cfy-autoscale")
