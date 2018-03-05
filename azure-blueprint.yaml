@@ -11,7 +11,6 @@ imports:
   - plugin:cloudify-diamond-plugin
   - plugin:cloudify-fabric-plugin
   - imports/kubernetes.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-azure-plugin/1.4.3/plugin.yaml
 
 
 inputs:
