@@ -8,9 +8,9 @@ This blueprint creates an example Kubernetes cluster. It is intended as an examp
 Regardless of your infrastructure choice, this blueprint installs and configures on each VM:
 - The Kubernetes Yum repo will be installed on your VMs.
 - Docker, version 1.12.6-28.git1398f24.el7.centos
-- kubelet, version 1.6.4-0.
-- kubeadm, version 1.6.4-0.
-- kubernetes-cni, version 0.5.1-0.
+- kubelet, version 1.9.3-0.
+- kubeadm, version 1.9.3-0.
+- kubernetes-cni, version 0.6.0-0.
 - weave
 
 
@@ -27,6 +27,9 @@ You will need a *Cloudify Manager* running in either AWS, Azure, or Openstack. T
 * Common Secrets:
   * agent_key_private
   * agent_key_public
+  * cfy_user
+  * cfy_password
+  * cfy_tenant
 
 
 * AWS Secrets:
@@ -55,14 +58,18 @@ You will need a *Cloudify Manager* running in either AWS, Azure, or Openstack. T
   * external_network_name: This is the network on your Openstack that represents the internet gateway network.
   * public_network_name: An openstack network. (Inbound is expected, outbound is required.)
   * public_subnet_name: A subnet on the public network.
-  * private_network_name: An openstack network. (Inbound is not expected, outbound is required.)
-  * private_subnet_name: A subnet on the network. (Inbound is not expected, outbound is required.)
   * router_name: This is a router that is attached to your Subnets designated in the secrets public_subnet_name and private_subnet_name.
   * region: Your Keystone V2 region.
   * keystone_url: Your Keystone V2 auth URL.
   * keystone_tenant_name: Your Keystone V2 tenant name.
   * keystone_password: Your Keystone V2 password.
   * keystone_username:Your Keystone V2 username.
+
+
+* vSphere Secrets:
+  * vcenter_user: vCenter/vSphere user name
+  * vcenter_password: vCenter/vSphere password name
+  * vcenter_ip: vCenter/vSphere host
 
 
 ### Step 1: Install the simple Kubernetes cluster

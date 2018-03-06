@@ -1,0 +1,11 @@
+[Unit]
+Description=cfy kubernetes
+
+[Service]
+ExecStart=/usr/bin/cfy-kubernetes --kubeconfig /etc/kubernetes/admin.conf --cloud-config {{ home_dir }}/cfy.json --cloud-provider cloudify --alsologtostderr
+KillMode=process
+Restart=on-failure
+RestartSec=60s
+
+[Install]
+WantedBy=multi-user.target

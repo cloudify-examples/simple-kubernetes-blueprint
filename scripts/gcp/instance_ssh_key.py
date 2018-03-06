@@ -30,7 +30,7 @@ if __name__ == '__main__':
                      {}).get('cloudify',
                              {}).get('cloudify_agent', {})
     if 'agent_key_path' in _cloudify_agent.keys() \
-            and (_cloudify_agent['agent_key_path'] == None
+            and (_cloudify_agent['agent_key_path'] is None
                  or _cloudify_agent['agent_key_path'] == ''):
         del _context['context']['cloudify']['cloudify_agent']['agent_key_path']
         client.manager.update_context(

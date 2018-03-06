@@ -2,9 +2,7 @@
 
 import subprocess
 from cloudify import ctx
-from cloudify.exceptions import NonRecoverableError
-
-START_COMMAND = 'sudo kubeadm join --token {0} {1}:{2}'
+from cloudify.exceptions import NonRecoverableError, OperationRetry
 
 
 def execute_command(_command):
@@ -36,6 +34,12 @@ def execute_command(_command):
 
 if __name__ == '__main__':
 
+    # echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+    status = execute_command(
+        "sudo sysctl net.bridge.bridge-nf-call-iptables=1")
+    if status is False:
+        raise OperationRetry('Failed to set bridge-nf-call-iptables')
+
     hostname = execute_command('hostname')
     ctx.instance.runtime_properties['hostname'] = hostname.rstrip('\n')
 
@@ -51,15 +55,20 @@ if __name__ == '__main__':
     master = masters[0]
     bootstrap_token = \
         master.target.instance.runtime_properties['bootstrap_token']
+    bootstrap_hash = \
+        master.target.instance.runtime_properties['bootstrap_hash']
     master_ip = \
         master.target.instance.runtime_properties['master_ip']
     master_port = \
         master.target.instance.runtime_properties['master_port']
 
     # Join the cluster.
-    join_command = \
-        'sudo kubeadm join --token {0} {1}:{2} --skip-preflight-checks'.format(
-            bootstrap_token, master_ip, master_port)
+    join_command = (
+        'sudo kubeadm join --token {0} --discovery-token-ca-cert-hash {1} '
+        '{2}:{3} --skip-preflight-checks'
+        .format(bootstrap_token, bootstrap_hash, master_ip, master_port)
+    )
+    ctx.logger.info("Join by {}".format(repr(join_command)))
     execute_command(join_command)
 
     # Install weave-related utils
