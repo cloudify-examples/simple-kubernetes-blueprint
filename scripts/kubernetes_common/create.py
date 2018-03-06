@@ -202,6 +202,7 @@ if __name__ == '__main__':
     cfy_pass = inputs.get('cfy_password', 'admin')
     cfy_tenant = inputs.get('cfy_tenant', 'default_tenant')
     agent_user = inputs.get('agent_user', 'centos')
+    full_install = inputs.get('full_install', 'all')
 
     if not os.path.isfile(config_file):
         ctx.logger.info("Create config {} file".format(config_file))
@@ -292,11 +293,17 @@ if __name__ == '__main__':
         else:
             raise NonRecoverableError('Unsupported platform.')
 
-    full_install = inputs.get('full_install', 'all')
-
     # download mount tools
     if full_install != "loadbalancer":
         download_service("cfy-go")
+        output = execute_command([
+            '/usr/bin/cfy-go', 'status', 'diag',
+            '-deployment', ctx.deployment.id,
+            '-tenant', cfy_tenant, '-password', cfy_pass,
+            '-user', cfy_user, '-host', cfy_host_full,
+            '-agent-file', "{}/.cfy-agent/{}.json"
+            .format(agent_file, agent_name)])
+        ctx.logger.info("Diagnostic: {}".format(output))
 
     if full_install == "all":
         # download cluster provider
