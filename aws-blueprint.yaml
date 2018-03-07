@@ -89,7 +89,7 @@ node_templates:
       - type: cloudify.relationships.depends_on
         target: cloudify_load_cloud_config
       - type: cloudify.aws.relationships.instance_connected_to_eni
-        target: kubernetes_node_nic
+        target: kubernetes_load_nic
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
