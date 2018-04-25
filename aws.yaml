@@ -5,11 +5,12 @@ description: >
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
-  - plugin:cloudify-diamond-plugin?version=1.3.8
-  - plugin:cloudify-fabric-plugin?version=1.5.1
-  - plugin:cloudify-utilities-plugin?version=1.5.0.1
+  - plugin:cloudify-diamond-plugin
+  - plugin:cloudify-fabric-plugin
+  - plugin:cloudify-utilities-plugin
+  - plugin:cloudify-kubernetes-plugin
+  - plugin:cloudify-aws-plugin
   - imports/kubernetes.yaml
-  - https://github.com/cloudify-cosmo/cloudify-aws-plugin/releases/download/1.5.1.2/plugin.yaml
   - imports/cloud-config.yaml
 
 inputs:
