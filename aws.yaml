@@ -5,11 +5,12 @@ description: >
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
-  - plugin:cloudify-diamond-plugin?version=1.3.8
-  - plugin:cloudify-fabric-plugin?version=1.5.1
-  - plugin:cloudify-utilities-plugin?version=1.5.0.1
+  - plugin:cloudify-diamond-plugin
+  - plugin:cloudify-fabric-plugin
+  - plugin:cloudify-utilities-plugin
+  - plugin:cloudify-kubernetes-plugin
+  - plugin:cloudify-aws-plugin
   - imports/kubernetes.yaml
-  - https://github.com/cloudify-cosmo/cloudify-aws-plugin/releases/download/1.5.1.2/plugin.yaml
   - imports/cloud-config.yaml
 
 inputs:
@@ -261,6 +262,10 @@ node_templates:
         - ip_protocol: tcp
           from_port: 10255
           to_port: 10255
+          cidr_ip: 0.0.0.0/0
+        - ip_protocol: tcp
+          from_port: 30000
+          to_port: 40000
           cidr_ip: 0.0.0.0/0
     relationships:
       - type: cloudify.aws.relationships.security_group_contained_in_vpc
