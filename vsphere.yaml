@@ -85,6 +85,9 @@ inputs:
   agent_group:
     default: root
 
+  dashboard_ip:
+    default: { get_attribute: [ kubernetes_master_host, ip ] }
+
 dsl_definitions:
 
   connection_config: &connection_config

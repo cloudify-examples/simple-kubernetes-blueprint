@@ -15,8 +15,6 @@ imports:
 
 inputs:
 
-inputs:
-
   client_x509_cert_url:
     type: string
     default: { get_secret: client_x509_cert_url }
@@ -65,6 +63,9 @@ inputs:
 
   resource_prefix:
     default: cfyk8s
+
+  dashboard_ip:
+    default: { get_attribute: [  kubernetes_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }
 
 dsl_definitions:
 

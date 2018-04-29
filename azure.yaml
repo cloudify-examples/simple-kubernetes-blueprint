@@ -45,6 +45,9 @@ inputs:
     - path: {concat:[ '/home/', { get_input: agent_user }, '/.ssh/authorized_keys' ]}
       keyData: { get_secret: agent_key_public }
 
+  dashboard_ip:
+    default: { get_attribute: [ kubernetes_master_host, public_ip ] }
+
 dsl_definitions:
 
   azure_config: &azure_config
