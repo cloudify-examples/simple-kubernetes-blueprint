@@ -29,6 +29,9 @@ inputs:
       User for connecting to agent VMs
     default: centos
 
+  dashboard_ip:
+    default: { get_attribute: [ kubernetes_master_ip, floating_ip_address ] }
+
 dsl_definitions:
 
   openstack_config: &openstack_config
