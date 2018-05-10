@@ -17,6 +17,9 @@ JCRE_COMPILED = re.compile(JOIN_COMMAND_REGEX)
 BTRE_COMPILED = re.compile(BOOTSTRAP_TOKEN_REGEX)
 BHRE_COMPILED = re.compile(BOOTSTRAP_HASH_REGEX)
 IPRE_COMPILED = re.compile(IP_PORT_REGEX)
+WEAVE = \
+    'https://raw.githubusercontent.com/weaveworks/weave/' \
+    'master/prog/weave-kube/weave-daemonset-k8s-1.6.yaml'
 
 
 def execute_command(_command):
@@ -160,7 +163,7 @@ if __name__ == '__main__':
     setup_secrets(split_master_port, bootstrap_token, bootstrap_hash)
 
     configure_admin_conf()
-    execute_command('kubectl apply -f https://git.io/weave-kube-1.6')
+    execute_command('kubectl apply -f {0}'.format(WEAVE))
 
     # Install weave-related utils
     execute_command('sudo curl -L git.io/weave -o /usr/local/bin/weave')
