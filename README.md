@@ -2,4 +2,4 @@
 
 # Simple Kubernetes Blueprint
 
-This blueprint installs a Kubernetes Cluster with the Cloudify Kubernetes Provider. See [documentation](http://docs.getcloudify.org/4.3.0/kubernetes/provider/#setup).
+This blueprint installs a Kubernetes Cluster with the Cloudify Kubernetes Provider. See [documentation](http://docs.getcloudify.org/4.3.0/developer/kubernetes/provider/#setup).
