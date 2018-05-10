@@ -82,7 +82,6 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       security_group:
-        name: kubernetes_security_group
         description: kubernetes master security group
       rules:
       - remote_ip_prefix: 0.0.0.0/0
