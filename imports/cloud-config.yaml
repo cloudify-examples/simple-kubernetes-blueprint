@@ -31,9 +31,9 @@ node_templates:
         packages:
           - [ca-certificates, 2017.2.14]
           - [docker, 1.12.6]
-          - [kubelet, 1.9.3-0]
-          - [kubeadm, 1.9.3-0]
-          - [kubectl, 1.9.3-0]
+          - [kubelet, 1.9.6-0]
+          - [kubeadm, 1.9.6-0]
+          - [kubectl, 1.9.6-0]
           - [kubernetes-cni, 0.6.0-0]
         runcmd:
           - [ setenforce, 0 ]
@@ -45,13 +45,3 @@ node_templates:
           - [ mkdir, '-p', /tmp/data ]
           - [ chcon, '-Rt', svirt_sandbox_file_t, /tmp/data ]
 
-  cloudify_load_cloud_config:
-    type: cloudify.nodes.CloudInit.CloudConfig
-    properties:
-      resource_config:
-        users:
-          - name: { get_input: agent_user }
-            shell: /bin/bash
-            sudo: ['ALL=(ALL) NOPASSWD:ALL']
-            ssh-authorized-keys:
-              - { get_secret: agent_key_public }

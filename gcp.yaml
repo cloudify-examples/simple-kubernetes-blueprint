@@ -1,16 +1,15 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 description: >
-  This Blueprint installs the nodecellar application behind
-  an haproxy instance on an openstack cloud environment.
+  This blueprint creates a Kubernetes Cluster.
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.3.1/types.yaml
   - plugin:cloudify-diamond-plugin
   - plugin:cloudify-fabric-plugin
   - plugin:cloudify-utilities-plugin
-  - plugin:cloudify-gcp-plugin
   - plugin:cloudify-kubernetes-plugin
+  - plugin:cloudify-gcp-plugin
   - imports/kubernetes.yaml
 
 inputs:
@@ -65,7 +64,14 @@ inputs:
     default: cfyk8s
 
   dashboard_ip:
-    default: { get_attribute: [  kubernetes_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }
+    default: { get_attribute: [  k8s_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }
+
+  ks_node_dep_archive:
+    default: https://github.com/cloudify-incubator/kubernetes-node-blueprints/archive/master.zip
+
+  ks_load_dep_archive:
+    default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
+
 
 dsl_definitions:
 
@@ -86,7 +92,7 @@ dsl_definitions:
 
 node_templates:
 
-  kubernetes_master_host:
+  k8s_master_host:
     type: cloudify.gcp.nodes.Instance
     properties:
       gcp_config: *gcp_config
@@ -120,7 +126,7 @@ node_templates:
               chmod 0444 /etc/yum.repos.d/kubernetes.repo
               setenforce 0
             - |
-              yum -t -y install docker-1.12.6 kubelet-1.9.3-0 kubeadm-1.9.3-0 kubectl-1.9.3-0 kubernetes-cni-0.6.0-0 ca-certificates
+              yum -t -y install docker-1.12.6 kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates
               sudo update-ca-trust force-enable
               swapon -s | awk '{print "sudo swapoff " $1}' | grep -v "Filename" | sh -
               sudo sed -i 's|cgroup-driver=systemd|cgroup-driver=systemd --provider-id='`hostname`'|g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
@@ -144,53 +150,6 @@ node_templates:
             user: { get_input: agent_user }
             ssh_keys:
             - { get_secret: agent_key_public }
-
-  kubernetes_node_host:
-    type: cloudify.gcp.nodes.Instance
-    properties:
-      gcp_config: *gcp_config
-      agent_config:
-        install_method: remote
-        user: { get_input: agent_user }
-        port: 22
-        key: { get_secret: agent_key_private }
-      image_id: { get_input: image }
-      instance_type: { get_input: instance_type }
-      zone: { get_input: zone }
-      external_ip: true
-      block_project_ssh_keys: true
-      startup_script: *install_kubernetes
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: subnetwork
-      - type: cloudify.gcp.relationships.instance_connected_to_security_group
-        target: kubernetes_fw
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create: *instance_ssh_key_prep
-
-  kubernetes_load_host:
-    type: cloudify.gcp.nodes.Instance
-    properties:
-      gcp_config: *gcp_config
-      agent_config:
-        install_method: remote
-        user: { get_input: agent_user }
-        port: 22
-        key: { get_secret: agent_key_private }
-      image_id: { get_input: image }
-      instance_type: { get_input: instance_type }
-      zone: { get_input: zone }
-      external_ip: true
-      block_project_ssh_keys: true
-    relationships:
-      - type: cloudify.relationships.depends_on
-        target: subnetwork
-      - type: cloudify.gcp.relationships.instance_connected_to_security_group
-        target: kubernetes_fw
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create: *instance_ssh_key_prep
 
   kubernetes_fw:
     type: cloudify.gcp.nodes.FirewallRule
@@ -257,31 +216,64 @@ node_templates:
       name: { get_secret: management_network_name }
       gcp_config: *gcp_config
 
-groups:
-
-  k8s_node_scale_group:
-    members:
-      - kubernetes_node_host
-
-  k8s_load_scale_group:
-    members:
-      - kubernetes_load_host
-
-policies:
-
-  kubernetes_node_vms_scaling_policy:
-    type: cloudify.policies.scaling
+  k8s_node:
+    type: cloudify.nodes.DeploymentProxy
     properties:
-      default_instances:  1
-    targets: [k8s_node_scale_group]
+      resource_config:
+        blueprint:
+          id: k8s_node_blue
+          blueprint_archive: { get_input: ks_node_dep_archive }
+          main_file_name: gcp.yaml
+        deployment:
+          id: k8s_node_dep
+          inputs:
+            node_firewall_name: { get_attribute: [ kubernetes_fw, resource_id ] }
+            ssh_firewall_name: { get_attribute: [ ssh_fw, resource_id ] }
+            public_master_ip: { get_attribute: [  k8s_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }
+          outputs:
+            deployment-type: deployment-type
+            deployment-node-data-type: deployment-node-data-type
 
-  kubernetes_load_vms_scaling_policy:
-    type: cloudify.policies.scaling
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: k8s_master_host
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_fw
+      - type: cloudify.relationships.depends_on
+        target: ssh_fw
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_master
+
+  k8s_load:
+    type: cloudify.nodes.DeploymentProxy
     properties:
-      default_instances:  1
-    targets: [k8s_load_scale_group]
+      resource_config:
+        blueprint:
+          id: k8s_lb_blue
+          blueprint_archive: { get_input: ks_load_dep_archive }
+          main_file_name: gcp.yaml
+        deployment:
+          id: k8s_lb_dep
+          inputs:
+            node_firewall_name: { get_attribute: [ kubernetes_fw, resource_id ] }
+            ssh_firewall_name: { get_attribute: [ ssh_fw, resource_id ] }
+          outputs:
+            deployment-type: deployment-type
+            deployment-node-data-type: deployment-node-data-type
+
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: k8s_master_host
+      - type: cloudify.relationships.depends_on
+        target: k8s_node
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_fw
+      - type: cloudify.relationships.depends_on
+        target: ssh_fw
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_master
 
 outputs:
 
   kubernetes_master_public_ip:
-    value: { get_attribute: [  kubernetes_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }
+    value: { get_attribute: [  k8s_master_host, networkInterfaces, 0, accessConfigs, 0, natIP ] }

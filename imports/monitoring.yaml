@@ -27,4 +27,4 @@ node_templates:
             placeholder: placeholder
     relationships:
     - type: cloudify.relationships.depends_on
-      target: kubernetes_node
+      target: k8s_node
