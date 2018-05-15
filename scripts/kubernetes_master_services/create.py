@@ -24,6 +24,7 @@ import socket
 import ssl
 import subprocess
 import tempfile
+import urllib
 
 from cloudify import ctx
 from cloudify.state import ctx_parameters as inputs
@@ -82,15 +83,29 @@ def execute_command(command, extra_args=None):
     return output
 
 
-def download_service(service_name):
+def download_binary(_url):
+    _, filepath = tempfile.mkstemp()
+    f = urllib.urlopen(_url)
+    fh = open(filepath, 'wb')
+    fh.write(f.read())
+    fh.close()
+    return filepath
+
+
+def download_service(service_name, release_base_url=None):
     service_path = "/usr/bin/" + service_name
     if not os.path.isfile(service_path):
         try:
             cfy_binary = ctx.download_resource(
                 'resources/{}'.format(service_name))
         except HttpException:
-            raise NonRecoverableError(
-                '{} binary not in resources.'.format(service_name))
+            if not release_base_url:
+                raise NonRecoverableError(
+                    '{} binary not in resources.'.format(service_name))
+            ctx.logger.debug(
+                '{} not found. '
+                'Pulling from alternate location.'.format(service_name))
+            cfy_binary = download_binary(release_base_url)
         ctx.logger.debug('{} downloaded.'.format(service_name))
         if execute_command(['sudo', 'cp', cfy_binary, service_path]) is False:
             raise NonRecoverableError("Can't copy {}.".format(service_path))
@@ -395,7 +410,8 @@ if __name__ == '__main__':
         setup_kubernetes_node_data_type()
 
         # Download cfy-go service
-        download_service("cfy-go")
+        cfy_go_url = inputs.get('cfy_go_url')
+        download_service("cfy-go", cfy_go_url)
 
         # Run the diag command with option ``-node`` which check the
         # kubernetes nodes
@@ -418,12 +434,14 @@ if __name__ == '__main__':
             raise NonRecoverableError("Failed to run daig command")
 
     if full_install == "all":
+        cfy_autoscale_url = inputs.get('cfy_autoscale_url')
+        cfy_kubernetes_url = inputs.get('cfy_kubernetes_url')
         # download cluster provider
-        download_service("cfy-kubernetes")
+        download_service("cfy-kubernetes", cfy_kubernetes_url)
         create_service("cfy-kubernetes")
 
         # download scale tools
-        download_service("cfy-autoscale")
+        download_service("cfy-autoscale", cfy_autoscale_url)
         create_service("cfy-autoscale")
 
         start_check("cfy-kubernetes")

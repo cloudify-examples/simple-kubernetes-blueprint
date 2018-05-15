@@ -9,6 +9,15 @@ inputs:
   labels:
     default: {}
 
+  cfy_autoscale_url:
+    default: https://github.com/cloudify-incubator/cloudify-kubernetes-provider/releases/download/0.0.0%2B16/cfy-autoscale
+
+  cfy_kubernetes_url:
+    default: https://github.com/cloudify-incubator/cloudify-kubernetes-provider/releases/download/0.0.0%2B16/cfy-kubernetes
+
+  cfy_go_url:
+    default: https://github.com/cloudify-incubator/cloudify-kubernetes-provider/releases/download/0.0.0%2B16/cfy-go
+
 node_types:
 
   cloudify.nodes.Kubernetes.Master:
@@ -40,6 +49,12 @@ node_types:
               default: { get_input: agent_user }
             full_install:
               default: no
+            cfy_go_url:
+              default: { get_input: cfy_go_url }
+            cfy_autoscale_url:
+              default: { get_input: cfy_autoscale_url }
+            cfy_kubernetes_url:
+              default: { get_input: cfy_kubernetes_url }
       maintenance:
         mount:
           implementation: scripts/kubernetes_master_services/mount.py
