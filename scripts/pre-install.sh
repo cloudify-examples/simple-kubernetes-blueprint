@@ -22,7 +22,7 @@ EOF
 
 setenforce 0
 
-yum -t -y install docker-1.13.1 kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates
+yum -t -y install docker-engine-1.13.1 kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates
 
 groupadd docker
 # Override

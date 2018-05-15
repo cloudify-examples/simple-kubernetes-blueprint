@@ -28,13 +28,16 @@ sudo chmod 644 /etc/yum.repos.d/docker.repo
 sudo chown root:root /etc/yum.repos.d/kubernetes.repo
 sudo chown root:root /etc/yum.repos.d/docker.repo
 
+sudo mv /tmp/docker.repo /etc/yum.repos.d/docker.repo
+sudo chmod 644 /etc/yum.repos.d/docker.repo
+sudo chown root:root /etc/yum.repos.d/docker.repo
+
 sudo yum -y install deltarpm epel-release unzip
 
 sudo yum makecache
 
 sudo setenforce 0
-
-sudo yum -y install kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates docker-1.12.6
+sudo yum -y install kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates docker-1.13.1
 sudo update-ca-trust force-enable
 
 sudo groupadd docker

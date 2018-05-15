@@ -37,7 +37,6 @@ inputs:
   ks_load_dep_archive:
     default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
 
-
 dsl_definitions:
 
   openstack_config: &openstack_config
@@ -84,6 +83,9 @@ node_templates:
         port: 53
       - remote_ip_prefix: 0.0.0.0/0
         port: 53
+        protocol: udp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 8472
         protocol: udp
       - remote_ip_prefix: 0.0.0.0/0
         port: 80
@@ -200,7 +202,7 @@ node_templates:
       - type: cloudify.relationships.depends_on
         target: kubernetes_security_group
       - type: cloudify.relationships.depends_on
-        target: kubernetes_master
+        target: kubernetes_setup_master
 
   k8s_load:
     type: cloudify.nodes.DeploymentProxy
@@ -220,13 +222,7 @@ node_templates:
 
     relationships:
       - type: cloudify.relationships.depends_on
-        target: k8s_master_host
-      - type: cloudify.relationships.depends_on
         target: k8s_node
-      - type: cloudify.relationships.depends_on
-        target: kubernetes_security_group
-      - type: cloudify.relationships.depends_on
-        target: kubernetes_master
 
 outputs:
 

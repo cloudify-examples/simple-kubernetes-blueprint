@@ -9,7 +9,7 @@ inputs:
     default: { get_input: kubernetes_monitoring_blueprint_id }
 
   kubernetes_monitoring_blueprint_archive:
-    default: https://github.com/cloudify-incubator/kubernetes-monitoring-blueprint/archive/v1.0.zip
+    default: resources/kubernetes-monitoring-blueprint-archive.tar.gz
 
 node_templates:
 
@@ -27,4 +27,4 @@ node_templates:
             placeholder: placeholder
     relationships:
     - type: cloudify.relationships.depends_on
-      target: k8s_node
+      target: kubernetes_cni

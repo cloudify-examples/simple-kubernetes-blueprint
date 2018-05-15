@@ -9,7 +9,7 @@ inputs:
     default: { get_input: kubernetes_dashboard_blueprint_id }
 
   kubernetes_dashboard_blueprint_archive:
-    default: https://github.com/cloudify-incubator/kubernetes-dashboard-blueprint/archive/v1.1.zip
+    default: resources/kubernetes-dashboard-blueprint-archive.tar.gz
 
 node_templates:
 
@@ -31,4 +31,4 @@ node_templates:
             dashboard_url: dashboard_url
     relationships:
     - type: cloudify.relationships.depends_on
-      target: k8s_node
+      target: kubernetes_cni

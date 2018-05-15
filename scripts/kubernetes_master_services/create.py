@@ -227,6 +227,11 @@ def get_kubernetes_deployment_info(relationships, rel_type, target_type):
                         ctx.logger.info(
                             'Key: {0}, Value: {1}'.format(key, value))
 
+                # If the deployment-type does not exist then it is not the
+                # proxy deployment type we need
+                if 'deployment-type' not in dep_outputs:
+                    continue
+
                 # Deployment type (Load Balancer or Node)
                 dep_type = dep_outputs['deployment-type']
                 # Node Data Type (kubernetes Node or kubernetes load balancer)

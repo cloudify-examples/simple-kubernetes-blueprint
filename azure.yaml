@@ -11,6 +11,7 @@ imports:
   - plugin:cloudify-azure-plugin
   - plugin:cloudify-kubernetes-plugin
   - imports/kubernetes.yaml
+  - imports/cloud-config.yaml
 
 inputs:
 
@@ -31,7 +32,7 @@ inputs:
     default:
       publisher: OpenLogic
       offer: CentOS
-      sku: '7.3'
+      sku: '7-CI'
       version: latest
 
   agent_user:
@@ -53,7 +54,6 @@ inputs:
   ks_load_dep_archive:
     default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
 
-
 dsl_definitions:
 
   azure_config: &azure_config
@@ -63,61 +63,6 @@ dsl_definitions:
     client_secret: { get_secret: client_secret }
 
 node_templates:
-
-  kubernetes_master_docker:
-    type: cloudify.azure.nodes.compute.VirtualMachineExtension
-    properties:
-      location: { get_secret: location }
-      retry_after: { get_input: retry_after }
-      azure_config: *azure_config
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            resource_config:
-              publisher: Microsoft.Azure.Extensions
-              type: CustomScript
-              typeHandlerVersion: '2.0'
-              autoUpgradeMinorVersion: true
-              settings:
-                commandToExecute:
-                  concat:
-                  - |
-                    cat <<EOF > /etc/yum.repos.d/docker.repo
-                    [dockerrepo]
-                    name=Docker Repository
-                    baseurl=https://yum.dockerproject.org/repo/main/centos/7
-                    enabled=1
-                    gpgcheck=1
-                    gpgkey=https://yum.dockerproject.org/gpg
-                    EOF
-                  - |
-                    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-                    [kubernetes]
-                    name=Kubernetes
-                    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-                    enabled=1
-                    gpgcheck=1
-                    repo_gpgcheck=1
-                    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-                            https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-                    EOF
-                    setenforce 0
-                  - |
-                    yum -t -y install docker-1.13.1 kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1.9.6-0 kubernetes-cni-0.6.0-0 ca-certificates
-                    update-ca-trust force-enable
-                    swapon -s | awk '{print "sudo swapoff " $1}' | grep -v "Filename" | sh -
-                    sed -i 's|cgroup-driver=systemd|cgroup-driver=systemd --provider-id='`hostname`'|g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-                    sed -i 's|/usr/bin/dockerd|/usr/bin/dockerd --exec-opt native.cgroupdriver=systemd|g' /usr/lib/systemd/system/docker.service
-                    systemctl enable docker && systemctl start docker
-                    systemctl enable kubelet && systemctl start kubelet
-                    iptables --flush
-                    iptables -tnat --flush
-                    mkdir -p /tmp/data
-                    chcon -Rt svirt_sandbox_file_t /tmp/data
-    relationships:
-    - type: cloudify.azure.relationships.vmx_contained_in_vm
-      target: k8s_master_host
 
   k8s_master_host:
     type: cloudify.azure.nodes.compute.VirtualMachine
@@ -132,9 +77,7 @@ node_templates:
         storageProfile:
           imageReference: { get_input: image}
         osProfile:
-          customData: |
-            #!/bin/bash
-            echo "hello"
+          customData: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
           adminUsername: { get_input: agent_user }
           adminPassword: ''
           linuxConfiguration:
@@ -187,6 +130,17 @@ node_templates:
             priority: 103
             access: Allow
             direction: Inbound
+        - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},8472udp]}
+          properties:
+            description: 8472 UDP access
+            protocol: Udp
+            sourcePortRange: '*'
+            destinationPortRange: 8472
+            sourceAddressPrefix: '*'
+            destinationAddressPrefix: '*'
+            priority: 104
+            access: Allow
+            direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},tcp53]}
           properties:
             description: 53 TCP access
@@ -195,7 +149,7 @@ node_templates:
             destinationPortRange: 53
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 104
+            priority: 105
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},http]}
@@ -206,7 +160,7 @@ node_templates:
             destinationPortRange: 80
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 105
+            priority: 106
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},https]}
@@ -217,7 +171,7 @@ node_templates:
             destinationPortRange: 443
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 106
+            priority: 107
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},2379tcp]}
@@ -228,7 +182,7 @@ node_templates:
             destinationPortRange: 2379
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 107
+            priority: 108
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},4001tcp]}
@@ -239,7 +193,7 @@ node_templates:
             destinationPortRange: 4001
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 108
+            priority: 109
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},4789tcp]}
@@ -261,7 +215,7 @@ node_templates:
             destinationPortRange: 6443
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 109
+            priority: 110
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},6783tcp]}
@@ -308,6 +262,17 @@ node_templates:
             priority: 1093
             access: Allow
             direction: Inbound
+        - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},8285udp]}
+          properties:
+            description: 8285 UDP access
+            protocol: Udp
+            sourcePortRange: '*'
+            destinationPortRange: 8285
+            sourceAddressPrefix: '*'
+            destinationAddressPrefix: '*'
+            priority: 1094
+            access: Allow
+            direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},8000tcp]}
           properties:
             description: 8000 TCP access
@@ -316,7 +281,7 @@ node_templates:
             destinationPortRange: 8000
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 110
+            priority: 111
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},http8080]}
@@ -327,7 +292,7 @@ node_templates:
             destinationPortRange: 8080
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 111
+            priority: 112
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},9090tcp]}
@@ -338,7 +303,7 @@ node_templates:
             destinationPortRange: 9090
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 112
+            priority: 113
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},10250tcp]}
@@ -349,7 +314,7 @@ node_templates:
             destinationPortRange: 10250
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 113
+            priority: 114
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},10255tcp]}
@@ -360,7 +325,7 @@ node_templates:
             destinationPortRange: 10255
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 114
+            priority: 115
             access: Allow
             direction: Inbound
         - name: {concat:[{get_input: resource_prefix},nsg,{get_input: resource_suffix},Apps]}
@@ -371,7 +336,7 @@ node_templates:
             destinationPortRange: 30000-40000
             sourceAddressPrefix: '*'
             destinationAddressPrefix: '*'
-            priority: 115
+            priority: 116
             access: Allow
             direction: Inbound
     relationships:
@@ -495,7 +460,7 @@ node_templates:
       - type: cloudify.relationships.depends_on
         target: storage_account
       - type: cloudify.relationships.depends_on
-        target: kubernetes_master
+        target: kubernetes_setup_master
 
   k8s_load:
     type: cloudify.nodes.DeploymentProxy
@@ -520,8 +485,7 @@ node_templates:
         target: k8s_node
       - type: cloudify.relationships.depends_on
         target: storage_account
-      - type: cloudify.relationships.depends_on
-        target: kubernetes_master
+
 
 outputs:
 
