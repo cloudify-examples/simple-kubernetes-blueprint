@@ -11,9 +11,22 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
 
+cat <<EOF > /tmp/docker.repo
+# installed by cloud-init
+[dockerrepo]
+name=Docker Repository
+baseurl=https://yum.dockerproject.org/repo/main/centos/7
+enabled=1
+gpgcheck=1
+gpgkey=https://yum.dockerproject.org/gpg
+EOF
+
 sudo mv /tmp/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+sudo mv /tmp/docker.repo /etc/yum.repos.d/docker.repo
 sudo chmod 644 /etc/yum.repos.d/kubernetes.repo
+sudo chmod 644 /etc/yum.repos.d/docker.repo
 sudo chown root:root /etc/yum.repos.d/kubernetes.repo
+sudo chown root:root /etc/yum.repos.d/docker.repo
 
 sudo yum -y install deltarpm epel-release unzip
 
