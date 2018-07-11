@@ -15,7 +15,7 @@ You need 3 separate machines, each with:
 
   * Network access and download ability.
   * Must be accessible via SSH
-  * A `agent_key_private` secret containing the private key for the user Cloudify will authenticate with.
+  * A `agent_key_private` secret containing the private key for the user Cloudify will authenticate with. Make sure that this private key value matches a public key in the authorized keys of each of the VMs.
 
 The two kubernetes nodes accessible in `k8s_node_host_ip` and `public_master_ip` must have been setup with the script in `scripts/pre-install.sh`. Make sure to override `usermod -aG docker ec2-user` in that file.
 
