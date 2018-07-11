@@ -250,7 +250,6 @@ node_templates:
           outputs:
             deployment-type: deployment-type
             deployment-node-data-type: deployment-node-data-type
-
     relationships:
       - type: cloudify.relationships.depends_on
         target: k8s_master_host
