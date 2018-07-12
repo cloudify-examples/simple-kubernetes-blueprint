@@ -1,0 +1,335 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: Creates nodes for use with compute.yaml.
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.3.1/types.yaml
+  - plugin:cloudify-utilities-plugin
+  - plugin:cloudify-awssdk-plugin
+
+inputs:
+
+  instance_type:
+    description: >
+      The AWS instance_type. Tested with m3.medium, although that is unnecessarily large.
+    default: t2.medium
+
+  agent_user:
+    description: >
+      The username of the agent running on the instance created from the image.
+    default: ec2-user
+
+dsl_definitions:
+
+  client_config: &client_config
+    aws_access_key_id: { get_secret: aws_access_key_id }
+    aws_secret_access_key: { get_secret: aws_secret_access_key }
+    region_name: { get_secret: ec2_region_name }
+
+node_templates:
+
+  k8s_load_host:
+    type: cloudify.nodes.aws.ec2.Instances
+    properties:
+      agent_config:
+        install_method: none
+      resource_config:
+        MaxCount: 1
+        MinCount: 1
+        ImageId: { get_secret: centos_core_image }
+        InstanceType: { get_input: instance_type }
+        kwargs:
+          BlockDeviceMappings:
+          - DeviceName: '/dev/sda1'
+            Ebs:
+              DeleteOnTermination: True
+          Placement:
+            AvailabilityZone: { get_secret: availability_zone }
+          UserData: { get_attribute: [ load_config, cloud_config ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: k8s_load_nic
+      - type: cloudify.relationships.depends_on
+        target: k8s_load_ip
+      - type: cloudify.relationships.depends_on
+        target: security_group_rules
+      - type: cloudify.relationships.depends_on
+        target: load_config
+
+  k8s_load_ip:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      resource_config:
+        kwargs:
+          Domain: 'vpc'
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: k8s_load_nic
+
+  k8s_load_nic:
+    type: cloudify.nodes.aws.ec2.Interface
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: Created by k8s-blueprint.
+          SubnetId: { get_attribute: [ public_subnet, aws_resource_id] }
+          Groups:
+          - { get_attribute: [ security_group, aws_resource_id ] }
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: public_subnet
+    - type: cloudify.relationships.depends_on
+      target: security_group
+
+  k8s_node_host:
+    type: cloudify.nodes.aws.ec2.Instances
+    properties:
+      agent_config:
+        install_method: none
+      resource_config:
+        MaxCount: 1
+        MinCount: 1
+        ImageId: { get_secret: centos_core_image }
+        InstanceType: { get_input: instance_type }
+        kwargs:
+          BlockDeviceMappings:
+          - DeviceName: '/dev/sda1'
+            Ebs:
+              DeleteOnTermination: True
+          Placement:
+            AvailabilityZone: { get_secret: availability_zone }
+          UserData: { get_attribute: [ kube_config, cloud_config ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: k8s_node_nic
+      - type: cloudify.relationships.depends_on
+        target: k8s_node_ip
+      - type: cloudify.relationships.depends_on
+        target: security_group_rules
+      - type: cloudify.relationships.depends_on
+        target: kube_config
+
+  k8s_node_ip:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      resource_config:
+        kwargs:
+          Domain: 'vpc'
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: k8s_node_nic
+
+  k8s_node_nic:
+    type: cloudify.nodes.aws.ec2.Interface
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: Created by haproxy-blueprint aws-blueprint.yaml.
+          SubnetId: { get_attribute: [ public_subnet, aws_resource_id] }
+          Groups:
+          - { get_attribute: [ security_group, aws_resource_id ] }
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: public_subnet
+    - type: cloudify.relationships.depends_on
+      target: security_group
+
+  k8s_master_host:
+    type: cloudify.nodes.aws.ec2.Instances
+    properties:
+      agent_config:
+        install_method: none
+      resource_config:
+        MaxCount: 1
+        MinCount: 1
+        ImageId: { get_secret: centos_core_image }
+        InstanceType: { get_input: instance_type }
+        kwargs:
+          BlockDeviceMappings:
+          - DeviceName: '/dev/sda1'
+            Ebs:
+              DeleteOnTermination: True
+          Placement:
+            AvailabilityZone: { get_secret: availability_zone }
+          UserData: { get_attribute: [ kube_config, cloud_config ] }
+      client_config: *client_config
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: k8s_master_nic
+      - type: cloudify.relationships.depends_on
+        target: k8s_master_ip
+      - type: cloudify.relationships.depends_on
+        target: security_group_rules
+      - type: cloudify.relationships.depends_on
+        target: kube_config
+
+  k8s_master_ip:
+    type: cloudify.nodes.aws.ec2.ElasticIP
+    properties:
+      resource_config:
+        kwargs:
+          Domain: 'vpc'
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: k8s_master_nic
+
+  k8s_master_nic:
+    type: cloudify.nodes.aws.ec2.Interface
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          Description: Created by haproxy-blueprint aws-blueprint.yaml.
+          SubnetId: { get_attribute: [ public_subnet, aws_resource_id] }
+          Groups:
+          - { get_attribute: [ security_group, aws_resource_id ] }
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: public_subnet
+    - type: cloudify.relationships.depends_on
+      target: security_group
+
+  security_group_rules:
+    type: cloudify.nodes.aws.ec2.SecurityGroupRuleIngress
+    properties:
+      client_config: *client_config
+      resource_config:
+        kwargs:
+          IpPermissions:
+          - IpProtocol: tcp
+            FromPort: 0
+            ToPort: 65535
+            IpRanges:
+            - CidrIp: 0.0.0.0/0
+          - IpProtocol: udp
+            FromPort: 0
+            ToPort: 65535
+            IpRanges:
+            - CidrIp: 0.0.0.0/0
+          - IpProtocol: icmp
+            FromPort: -1
+            ToPort: -1
+            IpRanges:
+            - CidrIp: 0.0.0.0/0
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: security_group
+
+  security_group:
+    type: cloudify.nodes.aws.ec2.SecurityGroup
+    properties:
+      resource_config:
+        kwargs:
+          GroupName: TestBlueprintGroup
+          Description: Created by kubernetes test.
+          VpcId: { get_attribute: [ vpc, aws_resource_id] }
+      client_config: *client_config
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: vpc
+
+  public_subnet:
+    type: cloudify.nodes.aws.ec2.Subnet
+    properties:
+      client_config: *client_config
+      use_external_resource: true
+      resource_id: { get_secret: public_subnet_id }
+      resource_config:
+        kwargs:
+          CidrBlock: 'N/A'
+          AvailabilityZone: 'N/A'
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: vpc
+
+  vpc:
+    type: cloudify.nodes.aws.ec2.Vpc
+    properties:
+      client_config: *client_config
+      use_external_resource: true
+      resource_id: { get_secret: vpc_id }
+      resource_config:
+        kwargs:
+          CidrBlock: 'N/A'
+
+  load_config:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    properties:
+      resource_config:
+        users:
+          - name: { get_input: agent_user }
+            primary-group: wheel
+            shell: /bin/bash
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            ssh-authorized-keys:
+              - { get_secret: agent_key_public }
+
+  kube_config:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    properties:
+      resource_config:
+        bootcmd:
+        - "mkdir -p /etc/systemd/system"
+        groups:
+          - docker
+        users:
+          - name: { get_input: agent_user }
+            primary-group: wheel
+            groups: docker
+            shell: /bin/bash
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            ssh-authorized-keys:
+              - { get_secret: agent_key_public }
+        write_files:
+          - path: /etc/yum.repos.d/docker.repo
+            owner: root:root
+            permissions: '0444'
+            content: |
+              # installed by cloud-init
+              [dockerrepo]
+              name=Docker Repository
+              baseurl=https://yum.dockerproject.org/repo/main/centos/7
+              enabled=1
+              gpgcheck=1
+              gpgkey=https://yum.dockerproject.org/gpg
+          - path: /etc/yum.repos.d/kubernetes.repo
+            owner: root:root
+            permissions: '0444'
+            content: |
+              # installed by cloud-init
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+              enabled=1
+              gpgcheck=1
+              repo_gpgcheck=1
+              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                     https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        packages:
+          - [ca-certificates, 2017.2.14]
+          - [docker-engine, 1.12.6]
+          - [kubelet, 1.9.6-0]
+          - [kubeadm, 1.9.6-0]
+          - [kubectl, 1.9.6-0]
+          - [kubernetes-cni, 0.6.0-0]
+        runcmd:
+          - [ setenforce, 0 ]
+          - [ update-ca-trust, force-enable ]
+          - "sed -i 's|/usr/bin/dockerd|/usr/bin/dockerd --exec-opt native.cgroupdriver=systemd|g' /usr/lib/systemd/system/docker.service"
+          - [ systemctl, enable, docker ]
+          - [ systemctl, start, docker ]
+          - [ chmod, 655, /etc/systemd/system/kubelet.service ]
+          - [ chmod, 655, /etc/systemd/system/kubelet.service.d/10-kubeadm.conf ]
+          - [ systemctl, enable, kubelet ]
+          - [ systemctl, start, kubelet ]
+          - [ iptables, --flush ]
+          - [ iptables, -tnat, --flush ]
+          - [ mkdir, '-p', /tmp/data ]
+          - [ chcon, '-Rt', svirt_sandbox_file_t, /tmp/data ]

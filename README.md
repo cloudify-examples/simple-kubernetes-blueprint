@@ -62,6 +62,6 @@ aws ec2 run-instances \
     --key-name $AWS_TEST_KEY \
     --subnet-id $AWS_SUBNET_ID \
     --associate-public-ip-address \
-    --user-data file://userdata.sh \
+    --user-data file://pre-install.sh \
     --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=k8s}]'
 ```
