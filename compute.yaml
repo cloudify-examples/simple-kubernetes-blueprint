@@ -95,6 +95,12 @@ node_templates:
         target: k8s_node
       - type: cloudify.relationships.depends_on
         target: kubernetes_master
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: cfy_util.cloudify_deployment_proxy.tasks.execute_start
+          inputs:
+            timeout: 1800
 
 outputs:
 
