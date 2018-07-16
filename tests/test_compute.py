@@ -75,7 +75,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
         pass
 
     def test_blueprints_valid(self):
-        for blueprint in ['aws', 'azure', 'gcp', 'openstack']:
+        for blueprint in ['aws', 'azure', 'gcp', 'openstack', 'hostpool']:
             failed = eco_utils.execute_command(
                 'cfy blueprints upload {0}.yaml'.format(blueprint))
 
@@ -94,7 +94,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
             'k8s_node_host', blueprint_id)[0]
         master_host = eco_utils.get_node_instances(
             'k8s_master_host', blueprint_id)[0]
-        compute_blueprint_path = 'compute.yaml'
+        compute_blueprint_path = 'baremetal.yaml'
         compute_blueprint_id = 'kube-{0}'.format(self.application_prefix)
         self.addCleanup(self.cleanup_deployment, compute_blueprint_id)
         eco_utils.execute_command(
