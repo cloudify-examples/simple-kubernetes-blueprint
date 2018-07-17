@@ -52,4 +52,4 @@ workflows:
           context: ecosystem
           filters:
             branches:
-              only: /([0-9\.]*\-build|latest|dev)/
+              only: /([0-9\.]*\-build|master|dev)/
