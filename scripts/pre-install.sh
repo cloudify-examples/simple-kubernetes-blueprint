@@ -26,7 +26,7 @@ yum -t -y install docker-engine-1.12.6 kubelet-1.9.6-0 kubeadm-1.9.6-0 kubectl-1
 
 groupadd docker
 # Override
-usermod -aG docker ec2-user
+usermod -aG docker centos
 
 update-ca-trust force-enable
 

@@ -5,9 +5,9 @@
 This blueprint installs a Kubernetes Cluster with the Cloudify Kubernetes Provider. See [documentation](http://docs.getcloudify.org/4.3.0/kubernetes/provider/#setup).
 
 
-## Generic "bare metal" Example
+## Generic "Baremetal" Example
 
-You can deploy this blueprint on bare metal.
+You can deploy this blueprint on baremetal.
 
 Requirements:
 
@@ -17,14 +17,14 @@ You need 3 separate machines, each with:
   * Must be accessible via SSH
   * A `agent_key_private` secret containing the private key for the user Cloudify will authenticate with. Make sure that this private key value matches a public key in the authorized keys of each of the VMs.
 
-The two kubernetes nodes accessible in `k8s_node_host_ip` and `public_master_ip` must have been setup with the script in `scripts/pre-install.sh`. Make sure to override `usermod -aG docker ec2-user` in that file.
+The two kubernetes nodes accessible in `k8s_node_host_ip` and `public_master_ip` must have been setup with the script in `scripts/pre-install.sh`. _Make sure to override `usermod -aG docker ec2-user` in that file._
 
 **Installation:**
 
 ```bash
 cfy install \
     https://github.com/cloudify-examples/simple-kubernetes-blueprint/archive/master.zip \
-    -n compute.yaml -i agent_user=ec2-user \
+    -n baremetal.yaml -i agent_user=ec2-user \
     -i k8s_node_host_ip=10.10.4.84 \
     -i public_master_ip=10.10.4.177 \
     -i k8s_load_host_ip=10.10.4.87 \
@@ -32,7 +32,7 @@ cfy install \
     -b kubernetes
 ```
 
-Some testing steps:
+You can use these steps to simulate a baremetal environment with pre-prepared VMs:
 
 ```shell
 # Add the following environment variables:

@@ -9,26 +9,19 @@ imports:
   - plugin:cloudify-fabric-plugin
   - plugin:cloudify-utilities-plugin
   - plugin:cloudify-kubernetes-plugin
+  - plugin:cloudify-host-pool-plugin
   - imports/kubernetes.yaml
 
 inputs:
 
-  public_master_ip:
-    type: string
-
-  k8s_node_host_ip:
-    type: string
-
-  k8s_load_host_ip:
-    type: string
-
   agent_user:
     description: >
-      The username of the agent running on the instance created from the image.
-    type: string
+      User for connecting to agent VMs
+    default: centos
 
-  dashboard_ip:
-    default: { get_input: public_master_ip }
+  hostpool_svc_endpoint:
+    type: string
+    description: The hostpool service endpoint, like http://10.10.0.90:8080.
 
   ks_node_dep_archive:
     default: https://github.com/cloudify-incubator/kubernetes-node-blueprints/archive/master.zip
@@ -36,18 +29,55 @@ inputs:
   ks_load_dep_archive:
     default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
 
+  dashboard_ip:
+    default: { get_attribute: [ k8s_master_host, ip ] }
+
+dsl_definitions:
+
+  _: &agent_installer
+    install:
+      implementation: agent.worker_installer.tasks.install
+      inputs:
+        cloudify_agent: &agent_config
+          user: { get_attribute: [SELF, agent_config, user] }
+          key: { get_attribute: [SELF, agent_config, key] }
+          port: { get_attribute: [SELF, agent_config, port] }
+    start:
+      implementation: agent.worker_installer.tasks.start
+      inputs:
+        cloudify_agent: *agent_config
+    stop:
+      implementation: agent.worker_installer.tasks.stop
+      inputs:
+        cloudify_agent: *agent_config
+    uninstall:
+      implementation: agent.worker_installer.tasks.uninstall
+      inputs:
+        cloudify_agent: *agent_config
+    restart:
+      implementation: agent.worker_installer.tasks.restart
+      inputs:
+        cloudify_agent: *agent_config
+
 node_templates:
 
-  # Compute Node should be prepared with pre-install.sh
   k8s_master_host:
-    type: cloudify.nodes.Compute
+    type: cloudify.hostpool.nodes.LinuxHost
     properties:
       agent_config:
-        install_method: remote
         user: { get_input: agent_user }
+        install_method: remote
         port: 22
         key: { get_secret: agent_key_private }
-      ip: { get_input: public_master_ip }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            service_url: { get_input: hostpool_svc_endpoint }
+        delete:
+          inputs:
+            service_url: { get_input: hostpool_svc_endpoint }
+      cloudify.interfaces.worker_installer: *agent_installer
 
   k8s_node:
     type: cloudify.nodes.DeploymentProxy
@@ -56,13 +86,13 @@ node_templates:
         blueprint:
           id: k8s_node_blue
           blueprint_archive: { get_input: ks_node_dep_archive }
-          main_file_name: compute.yaml
+          main_file_name: hostpool.yaml
         deployment:
           id: k8s_node_dep
           inputs:
+            public_master_ip: { get_attribute: [ k8s_master_host, ip ] }
             agent_user: { get_input: agent_user }
-            public_master_ip: { get_input: public_master_ip }
-            k8s_node_host_ip: { get_input: k8s_node_host_ip }
+            hostpool_svc_endpoint: { get_input: hostpool_svc_endpoint }
           outputs:
             deployment-type: deployment-type
             deployment-node-data-type: deployment-node-data-type
@@ -79,12 +109,12 @@ node_templates:
         blueprint:
           id: k8s_lb_blue
           blueprint_archive: { get_input: ks_load_dep_archive }
-          main_file_name: compute.yaml
+          main_file_name: hostpool.yaml
         deployment:
           id: k8s_lb_dep
           inputs:
             agent_user: { get_input: agent_user }
-            k8s_load_host_ip: { get_input: k8s_load_host_ip }
+            hostpool_svc_endpoint: { get_input: hostpool_svc_endpoint }
           outputs:
             deployment-type: deployment-type
             deployment-node-data-type: deployment-node-data-type
@@ -95,14 +125,3 @@ node_templates:
         target: k8s_node
       - type: cloudify.relationships.depends_on
         target: kubernetes_master
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: cfy_util.cloudify_deployment_proxy.tasks.execute_start
-          inputs:
-            timeout: 1800
-
-outputs:
-
-  kubernetes_master_public_ip:
-    value: { get_input: public_master_ip }
