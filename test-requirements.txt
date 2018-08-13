@@ -1,0 +1,6 @@
+cloudify==3.4.2
+nose
+cloudify-awssdk-plugin
+cloudify-fabric-plugin
+cloudify-utilities-plugin
+cloudify-ecosystem-test
