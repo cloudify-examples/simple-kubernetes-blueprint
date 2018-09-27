@@ -8,10 +8,11 @@ node_templates:
         - "mkdir -p /etc/systemd/system"
         groups:
           - docker
+          - { get_input: agent_user }
         users:
           - name: { get_input: agent_user }
             primary-group: wheel
-            groups: docker
+            groups: { concat: [ 'docker, ', { get_input: agent_user } ] }
             shell: /bin/bash
             sudo: ['ALL=(ALL) NOPASSWD:ALL']
             ssh-authorized-keys:
