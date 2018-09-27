@@ -54,23 +54,16 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       agent_config:
-          user: { get_input: agent_user }
-          install_method: remote
-          port: 22
-          key: { get_secret: agent_key_private }
+        user: { get_input: agent_user }
+        install_method: remote
+        port: 22
+        key: { get_secret: agent_key_private }
       server:
         key_name: ''
-        image: ''
-        flavor: ''
+        image: { get_input: image }
+        flavor: { get_input: flavor }
+        userdata: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
       management_network_name: { get_property: [ public_network, resource_id ] }
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          inputs:
-            args:
-              image: { get_input: image }
-              flavor: { get_input: flavor }
-              userdata: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
     relationships:
       - target: kubernetes_master_port
         type: cloudify.openstack.server_connected_to_port
@@ -201,7 +194,6 @@ node_templates:
           outputs:
             deployment-type: deployment-type
             deployment-node-data-type: deployment-node-data-type
-
     relationships:
       - type: cloudify.relationships.depends_on
         target: k8s_master_host
