@@ -12,7 +12,7 @@ node_templates:
         users:
           - name: { get_input: agent_user }
             primary-group: wheel
-            groups: { concat: [ 'docker, ', { get_input: agent_user } ] }
+            groups: docker
             shell: /bin/bash
             sudo: ['ALL=(ALL) NOPASSWD:ALL']
             ssh-authorized-keys:
@@ -44,7 +44,7 @@ node_templates:
                      https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
         packages:
           - [ca-certificates, 2017.2.14]
-          - [docker-engine, 1.12.6]
+          - [docker-engine, 1.13.1]
           - [kubelet, 1.9.6-0]
           - [kubeadm, 1.9.6-0]
           - [kubectl, 1.9.6-0]
