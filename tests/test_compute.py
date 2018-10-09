@@ -36,7 +36,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
         else:
             self.install_manager()
             self.initialize_manager_profile()
-            self.upload_plugins()
+            eco_utils.upload_plugin(HOST_POOL_WAGON, HOST_POOL_YAML)
 
     @property
     def sensitive_data(self):
@@ -64,11 +64,6 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
     @property
     def server_ip_property(self):
         return 'ip'
-
-    @property
-    def plugins_to_upload(self):
-        """plugin yamls to upload to manager"""
-        return [(HOST_POOL_WAGON, HOST_POOL_YAML)]
 
     @property
     def inputs(self):
