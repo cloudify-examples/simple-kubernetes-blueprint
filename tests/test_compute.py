@@ -77,10 +77,12 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
     def test_blueprints_valid(self):
         for blueprint in ['aws', 'azure', 'gcp', 'openstack', 'hostpool']:
             failed = eco_utils.execute_command(
-                'cfy blueprints upload {0}.yaml -b {1}-{0}'.format(
+                'cfy blueprints upload {0}.yaml -b {0}-{1}'.format(
                     blueprint, self.application_prefix))
             if failed:
-                raise Exception('Blueprint {0} must not be valid check logs.')
+                raise Exception(
+                    'Blueprint {0}-{1} must not be valid check logs.'.format(
+                        blueprint, self.application_prefix)
 
     def test_kubernetes_blueprint(self):
         blueprint_path = 'tests/blueprint.yaml'
