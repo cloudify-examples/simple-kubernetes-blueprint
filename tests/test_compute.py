@@ -11,13 +11,6 @@ from cloudify.exceptions import NonRecoverableError
 
 WORDPRESS = 'https://github.com/cloudify-incubator/' \
             'cloudify-kubernetes-plugin/archive/master.zip'
-DIAMOND_WAGON = 'https://github.com/cloudify-cosmo/' \
-                'cloudify-diamond-plugin/releases/' \
-                'download/1.3.8/cloudify_diamond_plugin-' \
-                '1.3.8-py27-none-linux_x86_64-centos-Core.wgn'
-DIAMOND_YAML = 'https://github.com/cloudify-cosmo/' \
-               'cloudify-diamond-plugin/releases/' \
-               'download/1.3.8/plugin.yaml'
 HOST_POOL_WAGON = 'https://github.com/cloudify-cosmo/' \
                   'cloudify-host-pool-plugin/releases/' \
                   'download/1.5/cloudify_host_pool_plugin-' \
@@ -43,6 +36,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
         else:
             self.install_manager()
             self.initialize_manager_profile()
+            self.upload_plugins()
 
     @property
     def sensitive_data(self):
@@ -74,8 +68,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
     @property
     def plugins_to_upload(self):
         """plugin yamls to upload to manager"""
-        return [(DIAMOND_WAGON, DIAMOND_YAML),
-                (HOST_POOL_WAGON, HOST_POOL_YAML)]
+        return [(HOST_POOL_WAGON, HOST_POOL_YAML)]
 
     @property
     def inputs(self):
