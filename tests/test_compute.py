@@ -82,7 +82,7 @@ class TestComputeKubernetesBlueprint(EcosystemTestBase):
             if failed:
                 raise Exception(
                     'Blueprint {0}-{1} must not be valid check logs.'.format(
-                        blueprint, self.application_prefix)
+                        blueprint, self.application_prefix))
 
     def test_kubernetes_blueprint(self):
         blueprint_path = 'tests/blueprint.yaml'
