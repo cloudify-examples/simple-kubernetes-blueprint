@@ -9,7 +9,7 @@ inputs:
     default: { get_input: kubernetes_monitoring_blueprint_id }
 
   kubernetes_monitoring_blueprint_archive:
-    default: resources/kubernetes-monitoring-blueprint-archive.tar.gz
+    default: https://github.com//cloudify-incubator/kubernetes-monitoring-blueprint/archive/master.zip
 
 node_templates:
 
