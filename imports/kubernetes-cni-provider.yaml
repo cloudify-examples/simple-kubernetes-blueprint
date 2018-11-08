@@ -12,7 +12,7 @@ inputs:
     default: weave.yaml
 
   kubernetes_cni_blueprint_archive:
-    default: resources/kubernetes-cni-provider-archive.tar.gz
+    default: https://github.com//cloudify-incubator/kubernetes-cni-provider/archive/master.zip
 
 node_templates:
 

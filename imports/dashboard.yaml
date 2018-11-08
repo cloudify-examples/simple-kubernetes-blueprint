@@ -9,7 +9,7 @@ inputs:
     default: { get_input: kubernetes_dashboard_blueprint_id }
 
   kubernetes_dashboard_blueprint_archive:
-    default: resources/kubernetes-dashboard-blueprint-archive.tar.gz
+    default: https://github.com/cloudify-incubator/kubernetes-dashboard-blueprint/archive/master.zip
 
 node_templates:
 
