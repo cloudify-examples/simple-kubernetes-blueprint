@@ -35,7 +35,7 @@ inputs:
     default: https://github.com/cloudify-incubator/kubernetes-node-blueprints/archive/1.9.7.zip
 
   ks_load_dep_archive:
-    default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/1.9.7.zip
+    default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
 
 dsl_definitions:
 
