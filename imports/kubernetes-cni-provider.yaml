@@ -9,7 +9,7 @@ inputs:
     default: { get_input: kubernetes_cni_blueprint_id }
 
   kubernetes_cni_provider_blueprint:
-    default: weave.yaml
+    default: flannel.yaml
 
   kubernetes_cni_blueprint_archive:
     default: https://github.com//cloudify-incubator/kubernetes-cni-provider/archive/master.zip
