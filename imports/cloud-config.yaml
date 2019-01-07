@@ -45,9 +45,9 @@ node_templates:
         packages:
           - [ca-certificates, 2017.2.14]
           - [docker-engine, 1.13.1]
-          - [kubelet, 1.9.6-0]
-          - [kubeadm, 1.9.6-0]
-          - [kubectl, 1.9.6-0]
+          - [kubelet, 1.9.7-0]
+          - [kubeadm, 1.9.7-0]
+          - [kubectl, 1.9.7-0]
           - [kubernetes-cni, 0.6.0-0]
         runcmd:
           - [ setenforce, 0 ]
