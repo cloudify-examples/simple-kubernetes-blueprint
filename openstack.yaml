@@ -32,7 +32,7 @@ inputs:
     default: { get_attribute: [ kubernetes_master_ip, floating_ip_address ] }
 
   ks_node_dep_archive:
-    default: https://github.com/cloudify-incubator/kubernetes-node-blueprints/archive/master.zip
+    default: https://github.com/cloudify-incubator/kubernetes-node-blueprints/archive/1.9.11.zip
 
   ks_load_dep_archive:
     default: https://github.com/cloudify-incubator/kubernetes-lb-blueprints/archive/master.zip
