@@ -62,7 +62,7 @@ node_templates:
         kwargs:
           Placement: { get_secret: availability_zone }
           UserData: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
-          Groups:
+          SecurityGroupIds:
           - { get_attribute: [ kubernetes_security_group, aws_resource_id ] }
           - { get_attribute: [ ssh_group, aws_resource_id ] }
           SubnetId: { get_secret: public_subnet_id }
